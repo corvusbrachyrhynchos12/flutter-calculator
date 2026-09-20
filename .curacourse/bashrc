@@ -1,0 +1,15 @@
+flutter() {
+    if [[ $@ == "run" ]]; then
+        command flutter run -d web-server --web-port 3000 --hot
+    else
+        command flutter "$@"
+    fi
+}
+
+firebase() {
+    if [[ $@ == "login" ]]; then
+        command firebase login --no-localhost
+    else
+        command firebase "$@"
+    fi
+}
