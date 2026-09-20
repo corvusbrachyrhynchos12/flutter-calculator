@@ -32,7 +32,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   String _accumulator = '';
   bool _hasError = false;
 
-  static const _operators = ['+', '-', '*', '/'];
+  static const _operators = ['+', '-', '*', '/', '%'];
 
   void _onButtonPressed(String value) {
     setState(() {
@@ -42,6 +42,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _backspace();
       } else if (value == '=') {
         _evaluate();
+      } else if (value == 'x²') {
+        _square();
       } else if (_operators.contains(value)) {
         _appendOperator(value);
       } else {
@@ -140,6 +142,24 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     return buffer.toString();
   }
 
+  /// Squares the current expression (or the last result) and evaluates it,
+  /// e.g. "2+3" -> "(2+3)*(2+3) = 25".
+  void _square() {
+    if (_hasError || _expression.isEmpty) return;
+
+    final lastChar = _expression[_expression.length - 1];
+    if (_operators.contains(lastChar)) return;
+
+    // Wrap anything that isn't a plain positive number so the
+    // multiplication keeps the right precedence.
+    final operand = RegExp(r'^[0-9.]+$').hasMatch(_expression)
+        ? _expression
+        : '($_expression)';
+    _expression = '$operand*$operand';
+    _accumulator = '';
+    _evaluate();
+  }
+
   void _evaluate() {
     if (_expression.isEmpty) return;
 
@@ -185,7 +205,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       if (s.length > 12) {
         s = result.toStringAsPrecision(10);
         s = s.contains('.')
-            ? s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '')
+            ? s
+                  .replaceFirst(RegExp(r'0+$'), '')
+                  .replaceFirst(RegExp(r'\.$'), '')
             : s;
       }
       return s;
@@ -221,7 +243,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   @override
   Widget build(BuildContext context) {
     final displayExpression = _formatForDisplay(
-        _accumulator.isNotEmpty ? _stripAccumulatorResult(_accumulator) : _expression);
+      _accumulator.isNotEmpty
+          ? _stripAccumulatorResult(_accumulator)
+          : _expression,
+    );
     final displayResult = _accumulator.isNotEmpty
         ? _accumulator.substring(_accumulator.indexOf(' = ') + 3)
         : '';
@@ -245,7 +270,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               flex: 2,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 alignment: Alignment.bottomRight,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -284,8 +312,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   children: [
                     Row(
                       children: [
-                        _buildButton('C', Colors.red.shade400, flex: 2),
+                        _buildButton('C', Colors.red.shade400, flex: 1),
                         _buildButton('⌫', Colors.orange.shade400),
+                        _buildButton('x²', Colors.blue.shade800),
                         _buildButton('/', Colors.blue.shade800),
                       ],
                     ),
@@ -317,7 +346,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                       children: [
                         _buildButton('0', Colors.blueGrey.shade600),
                         _buildButton('.', Colors.blueGrey.shade600),
-                        _buildButton('=', Colors.black87,flex:2),
+                        _buildButton('=', Colors.black87),
+                        _buildButton('%', Colors.blue.shade800),
                       ],
                     ),
                   ],
